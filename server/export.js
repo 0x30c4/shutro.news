@@ -20,6 +20,9 @@ function prune() {
   if (config.INGEST_MODE === 'live') {
     db.prepare("DELETE FROM articles WHERE url LIKE 'https://demo.%'").run();
   }
+  /* আগে ঢুকে পড়া ট্যাগ/আর্কাইভ-পাতা সাফ */
+  db.prepare(`DELETE FROM articles WHERE length(headline) < 25
+    OR headline LIKE '%Tag related%' OR headline LIKE '%আর্কাইভ%'`).run();
   const cutoff = new Date(Date.now() - 7 * 24 * 3600000).toISOString();
   db.prepare(`DELETE FROM headline_history WHERE article_id IN
     (SELECT id FROM articles WHERE published_at < ?)`).run(cutoff);

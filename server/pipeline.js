@@ -155,7 +155,10 @@ async function gatherIncoming(errors) {
           source: id,
           /* Google News শিরোনামের শেষে " - পোর্টালের নাম" থাকে — ছাঁটা */
           headline: s.gnews ? item.headline.replace(/\s+[-–|]\s+[^-–|]+$/, '') : item.headline,
-        }));
+        })).filter((item) =>
+          /* ট্যাগ/আর্কাইভ-পাতা জাতীয় আবর্জনা বাদ — খবরের শিরোনাম নয় */
+          item.headline.length >= 25 &&
+          !/tag related|all news|আর্কাইভ|archive|видео|photos?$/i.test(item.headline));
       }),
     );
     if (mode === 'live') portalsOk = 0;
