@@ -1,0 +1,6 @@
+.env
+server/shutro.db
+server/shutro.db-*
+node_modules/
+_site/
+.DS_Store

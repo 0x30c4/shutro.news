@@ -1,0 +1,11 @@
+{
+  "name": "shutro-news",
+  "private": true,
+  "type": "module",
+  "description": "সূত্র — Bangladesh news bias tracker (zero-dependency Node backend + static frontend)",
+  "engines": { "node": ">=22.5" },
+  "scripts": {
+    "start": "node server/index.js",
+    "refresh": "curl -s -X POST http://localhost:8790/api/refresh"
+  }
+}
