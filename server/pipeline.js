@@ -150,7 +150,12 @@ async function gatherIncoming(errors) {
     const results = await Promise.allSettled(
       liveSources.map(async ([id, s]) => {
         const items = await fetchFeed(s.feed);
-        return items.slice(0, 15).map((item) => ({ ...item, source: id }));
+        return items.slice(0, s.gnews ? 10 : 15).map((item) => ({
+          ...item,
+          source: id,
+          /* Google News শিরোনামের শেষে " - পোর্টালের নাম" থাকে — ছাঁটা */
+          headline: s.gnews ? item.headline.replace(/\s+[-–|]\s+[^-–|]+$/, '') : item.headline,
+        }));
       }),
     );
     if (mode === 'live') portalsOk = 0;
@@ -233,9 +238,11 @@ async function adjudicateBorderline(pending, centroids) {
 }
 
 async function assignClusters(freshIds, dirtyClusters) {
-  const fresh = freshIds
-    .map((id) => db.prepare('SELECT * FROM articles WHERE id = ?').get(id))
-    .slice(0, config.MAX_NEW_PER_RUN);
+  /* এই রানের নতুন + আগের রানের অতিরিক্ত (এখনো ক্লাস্টারহীন) ব্যাকলগ —
+     MAX_NEW_PER_RUN-এ কাটা পড়া প্রতিবেদন পরের রানে প্রক্রিয়া হয় */
+  const fresh = db.prepare(
+    'SELECT * FROM articles WHERE cluster_id IS NULL ORDER BY id ASC LIMIT ?',
+  ).all(config.MAX_NEW_PER_RUN);
   if (!fresh.length) return [];
 
   let embeddings;
@@ -352,8 +359,11 @@ async function summarizeClusters(dirtyClusters) {
 
 /* ফিডে ছবি না-থাকা লাইভ প্রতিবেদনের পাতা থেকে og:image তুলে আনা */
 async function backfillImages() {
+  /* news.google.com লিংকের পেছনের আসল পাতা JS ছাড়া মেলে না — og:image
+     আনতে গেলে গুগলের নিজের লোগো আসত; তাই বাদ */
   const rows = db.prepare(`SELECT id, url FROM articles
-    WHERE image IS NULL AND url LIKE 'http%' AND url NOT LIKE 'https://demo.%'
+    WHERE image IS NULL AND url LIKE 'http%'
+      AND url NOT LIKE 'https://demo.%' AND url NOT LIKE '%news.google.com%'
     ORDER BY id DESC LIMIT 20`).all();
   if (!rows.length) return;
   let found = 0;

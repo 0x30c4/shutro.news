@@ -37,7 +37,7 @@ jobs:
       - name: Run pipeline and export static site
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          INGEST_MODE: mixed
+          INGEST_MODE: live
         run: node server/export.js
 
       - name: Persist database to data branch
