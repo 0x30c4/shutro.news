@@ -354,7 +354,7 @@ async function summarizeClusters(dirtyClusters) {
 async function backfillImages() {
   const rows = db.prepare(`SELECT id, url FROM articles
     WHERE image IS NULL AND url LIKE 'http%' AND url NOT LIKE 'https://demo.%'
-    ORDER BY id DESC LIMIT 8`).all();
+    ORDER BY id DESC LIMIT 20`).all();
   if (!rows.length) return;
   let found = 0;
   await Promise.allSettled(rows.map(async (row) => {

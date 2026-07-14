@@ -43,6 +43,9 @@ db.exec(`
 
 /* মাইগ্রেশন: পুরোনো DB-তে image কলাম যোগ */
 try { db.exec('ALTER TABLE articles ADD COLUMN image TEXT'); } catch { /* আছে */ }
+/* মাইগ্রেশন: এক সময়ের স্টক-ফটো প্লেসহোল্ডার মুছে ফেলা — ছবি শুধু আসল
+   প্রতিবেদন থেকেই আসবে */
+db.exec("UPDATE articles SET image = NULL WHERE image LIKE 'https://picsum.photos/%'");
 
 export const q = {
   articleByUrl: db.prepare('SELECT * FROM articles WHERE url = ?'),

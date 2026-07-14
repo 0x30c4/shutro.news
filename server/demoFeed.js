@@ -21,9 +21,9 @@ function buildPool() {
       if (cluster.id === 'metro-fare' && report.src === 'prothom-alo') {
         headline = 'মেট্রোরেলের ভাড়া বাড়ছে, কার্যকর ১ আগস্ট'; // v1 — পরে বদলাবে
       }
-      // ডেমো খবরের বাস্তব ছবি নেই — ক্লাস্টার-প্রতি নির্ধারিত প্লেসহোল্ডার ফটো
-      const image = `https://picsum.photos/seed/shutro-${cluster.id}/640/360`;
-      pool.push({ source: report.src, url, headline, image });
+      // ডেমো খবরের পেছনে বাস্তব প্রতিবেদন নেই — তাই ছবিও নেই; UI নিরপেক্ষ
+      // প্লেসহোল্ডার দেখায়। ছবি আসে শুধু আসল প্রতিবেদন থেকে (feed/og:image)।
+      pool.push({ source: report.src, url, headline });
     }
   }
   // শিরোনাম-বদলের ঘটনা: একই URL, নতুন শিরোনাম — পরের কোনো রানে
