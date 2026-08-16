@@ -199,12 +199,23 @@ function upsertArticles(incoming) {
   return { freshIds, dirtyClusters };
 }
 
+/* embedding সংরক্ষণ: Float32 BLOB (JSON টেক্সটের চেয়ে ~৫ গুণ ছোট — DB ১০০MB
+   ছাড়িয়ে data-ব্রাঞ্চ পুশ ব্যর্থ হচ্ছিল)। পুরোনো JSON সারিও পড়া যায়। */
+function encodeEmbedding(vec) {
+  return new Uint8Array(Float32Array.from(vec).buffer);
+}
+function decodeEmbedding(raw) {
+  if (typeof raw === 'string') return JSON.parse(raw);
+  const u8 = raw instanceof Uint8Array ? raw : new Uint8Array(raw);
+  return Array.from(new Float32Array(u8.buffer, u8.byteOffset, u8.byteLength / 4));
+}
+
 function loadCentroids() {
   const since = new Date(Date.now() - config.ACTIVE_WINDOW_HOURS * 3600000).toISOString();
   return q.activeClusters.all(since).map((cluster) => {
     const rows = q.clusterEmbeddings.all(cluster.id);
     if (!rows.length) return null;
-    const vectors = rows.map((r) => JSON.parse(r.embedding));
+    const vectors = rows.map((r) => decodeEmbedding(r.embedding));
     const centroid = vectors[0].map((_, d) =>
       vectors.reduce((sum, v) => sum + v[d], 0) / vectors.length);
     return { id: cluster.id, centroid, n: vectors.length };
@@ -263,14 +274,14 @@ async function assignClusters(freshIds, dirtyClusters) {
     cluster.centroid = cluster.centroid.map((x, d) => (x * cluster.n + vec[d]) / (cluster.n + 1));
     cluster.n += 1;
     q.touchCluster.run(now, cluster.id);
-    q.setArticleCluster.run(cluster.id, JSON.stringify(vec), article.id);
+    q.setArticleCluster.run(cluster.id, encodeEmbedding(vec), article.id);
     dirtyClusters.add(cluster.id);
   };
   const createNew = (article, vec) => {
     const res = q.insertCluster.run(article.headline, null, '', now, now);
     const clusterId = Number(res.lastInsertRowid);
     if (vec) centroids.push({ id: clusterId, centroid: vec, n: 1 });
-    q.setArticleCluster.run(clusterId, vec ? JSON.stringify(vec) : null, article.id);
+    q.setArticleCluster.run(clusterId, vec ? encodeEmbedding(vec) : null, article.id);
     dirtyClusters.add(clusterId);
   };
 

@@ -27,6 +27,10 @@ function prune() {
   db.prepare(`DELETE FROM headline_history WHERE article_id IN
     (SELECT id FROM articles WHERE published_at < ?)`).run(cutoff);
   db.prepare('DELETE FROM articles WHERE published_at < ?').run(cutoff);
+  /* সক্রিয় উইন্ডোর বাইরের প্রতিবেদনের embedding আর কখনও পড়া হয় না — সরিয়ে
+     জায়গা বাঁচানো (প্রতিটি ~৬–৩০KB) */
+  const embedCutoff = new Date(Date.now() - config.ACTIVE_WINDOW_HOURS * 3600000).toISOString();
+  db.prepare('UPDATE articles SET embedding = NULL WHERE embedding IS NOT NULL AND published_at < ?').run(embedCutoff);
   db.prepare(`DELETE FROM clusters WHERE id NOT IN
     (SELECT DISTINCT cluster_id FROM articles WHERE cluster_id IS NOT NULL)`).run();
   db.exec('VACUUM');
